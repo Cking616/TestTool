@@ -17,7 +17,7 @@ g_board = None
 
 
 if __name__ == '__main__':
-    g_board = SdvBoard('COM6', 115200)
+    g_board = SdvBoard('/dev/ttyUSB0', 115200)
     timer = LoopTimer(0.1, g_board.timer_thread)
     timer.start()
     while not g_board.is_start():

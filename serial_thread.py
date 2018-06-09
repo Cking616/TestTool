@@ -48,6 +48,7 @@ class SdvBoard:
             self.bStarted = True
             print("System Start")
         elif cmd == 0x25:
+            # print(self._tmp_buf)
             self.PD4_flag[0] = self._tmp_buf[2]
             self.PD4_flag[1] = self._tmp_buf[3]
             self.PD4_flag[2] = self._tmp_buf[4]
@@ -59,7 +60,6 @@ class SdvBoard:
             self.PD4_encoder[_id - 1] = int.from_bytes(_buf, byteorder='little')
             self.PD4_encoder[_id - 1] = int32(self.PD4_encoder[_id - 1])
         elif cmd == 0x63:
-            # print(self._tmp_buf)
             _buf = self._tmp_buf[2:6]
             self.BLDC_encoder = int.from_bytes(_buf, byteorder='little')
             self.BLDC_encoder = int32(self.BLDC_encoder)
