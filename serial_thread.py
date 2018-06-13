@@ -12,6 +12,7 @@
 import threading
 import serial
 import time
+import RPi.GPIO as GPIO
 
 
 def int32(x):
@@ -41,6 +42,9 @@ class SdvBoard:
         self.wheel_real_time = False
         self.pd4_real_time = False
         self.bStarted = False
+        self.cmd_lock = threading.Lock()
+        GPIO.setmode(GPIO.BOARD)
+        GPIO.setup(16, GPIO.OUT)
 
     def _parse_cmd(self):
         cmd = self._tmp_buf[1]
@@ -95,11 +99,11 @@ class SdvBoard:
             if self.bStarted:
                 self._read_wheel_encoder()
         if self._tick == 5:
-            if self.bStarted:
-                self._read_pd4_encoder(1)
-                self._read_pd4_encoder(2)
-                self._read_pd4_encoder(3)
-                self._read_pd4_encoder(4)
+            # if self.bStarted:
+                # self._read_pd4_encoder(1)
+                # self._read_pd4_encoder(2)
+                # self._read_pd4_encoder(3)
+                # self._read_pd4_encoder(4)
             self._tick = 0
 
     def _send_cmd(self, cmd):
@@ -107,7 +111,10 @@ class SdvBoard:
         cmd.insert(0, 0x23)
         cmd = bytearray(cmd)
         # print(cmd)
+        self.cmd_lock.acquire()
         self.com_port.write(cmd)
+        self.com_port.flush()
+        self.cmd_lock.release()
 
     def _read_wheel_encoder(self):
         cmd = [0, 0x43, 0]
@@ -116,6 +123,7 @@ class SdvBoard:
     def _read_pd4_encoder(self, node_id):
         cmd = [0, 0x45, node_id, 0]
         self._send_cmd(cmd)
+        time.sleep(0.2)
 
     def stop_wheel(self):
         cmd = [0, 0x42, 0]
@@ -123,6 +131,12 @@ class SdvBoard:
 
     def start_wheel(self, pos, speed, a):
         cmd = [0, 0x41, pos & 0xff, (pos & 0xff00) >> 8, (pos & 0xff0000) >> 16, (pos & 0xff000000) >> 24, speed, a]
+        self._send_cmd(cmd)
+        time.sleep(0.2)
+
+    def set_wheel_param(self, dataId, data):
+        cmd = [0, 0x53, dataId, data & 0xff, (data & 0xff00) >> 8,
+               (data & 0xff0000) >> 16, (data & 0xff000000) >> 24]
         self._send_cmd(cmd)
         time.sleep(0.2)
 
@@ -158,6 +172,12 @@ class SdvBoard:
         self._send_cmd(cmd)
         time.sleep(0.2)
 
+    def power_on(self):
+        GPIO.output(16, GPIO.HIGH)
+
+    def power_off(self):
+        GPIO.output(16, GPIO.LOW)
+
 
 class _Timer(threading.Thread):
     def __init__(self, interval, func):
@@ -187,3 +207,4 @@ class LoopTimer(_Timer):
                 self.func()
             else:
                 break
+
